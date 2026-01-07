@@ -33,7 +33,7 @@ def render_normal(viewpoint_cam, depth, offset=None, normal=None, scale=1):
     return normal_ref
 
 def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None, 
-           app_model: AppModel=None, return_plane = True, return_depth_normal = True):
+           app_model: AppModel=None, return_plane = True, return_depth_normal = True, image_scaling_coef = 1):
     """
     Render the scene. 
     
@@ -87,8 +87,8 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
 
     return_dict = None
     raster_settings = PlaneGaussianRasterizationSettings(
-            image_height=int(viewpoint_camera.image_height),
-            image_width=int(viewpoint_camera.image_width),
+            image_height=int(viewpoint_camera.image_height * image_scaling_coef),
+            image_width=int(viewpoint_camera.image_width * image_scaling_coef),
             tanfovx=tanfovx,
             tanfovy=tanfovy,
             bg=bg_color,

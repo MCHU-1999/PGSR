@@ -91,7 +91,7 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
     depths_tsdf_fusion = []
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         gt, _ = view.get_image()
-        out = render(view, gaussians, pipeline, background, app_model=app_model)
+        out = render(view, gaussians, pipeline, background, app_model=app_model, image_scaling_coef=2)
         rendering = out["render"]
         _, H, W = rendering.shape
 
@@ -107,7 +107,6 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
 
         # Process and save normal map
         normal_map = out["rendered_normal"]  # Shape: (3, H, W)
-        # normal_map = torch.nn.functional.normalize(normal_map, p=2, dim=0)
         normal_map = (normal_map + 1.0) / 2.0 # Remap from [-1, 1] to [0, 1]
         normal_np = normal_map.cpu().numpy()
         np.save(os.path.join(render_normal_path, view.image_name + ".npy"), normal_np)
