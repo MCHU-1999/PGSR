@@ -98,6 +98,21 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
         depth = out["plane_depth"].squeeze()
         depth_tsdf = depth.clone()
 
+        # Depth and normal maps for feeding into PlanarSplatting (.npy files)        
+        # Process and save depth map
+        depth_map = out["plane_depth"].squeeze() # Shape: (H, W)
+        depth_map_clamped = torch.clamp(depth_map, min=0, max=300) # Clamp values to (0, 300)
+        depth_np = depth_map_clamped.cpu().numpy()
+        np.save(os.path.join(render_depth_path, view.image_name + ".npy"), depth_np)
+
+        # Process and save normal map
+        normal_map = out["rendered_normal"]  # Shape: (3, H, W)
+        # normal_map = torch.nn.functional.normalize(normal_map, p=2, dim=0)
+        normal_map = (normal_map + 1.0) / 2.0 # Remap from [-1, 1] to [0, 1]
+        normal_np = normal_map.cpu().numpy()
+        np.save(os.path.join(render_normal_path, view.image_name + ".npy"), normal_np)
+
+        # Original code
         # depth = depth.detach().cpu().numpy()
         # depth_i = (depth - depth.min()) / (depth.max() - depth.min() + 1e-20)
         # depth_i = (depth_i * 255).clip(0, 255).astype(np.uint8)
@@ -181,7 +196,8 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
 
         volume = o3d.pipelines.integration.ScalableTSDFVolume(
         voxel_length=voxel_size,
-        sdf_trunc=4.0*voxel_size,
+        # sdf_trunc=4.0*voxel_size,
+        sdf_trunc = 5.0*voxel_size if args.sdf_trunc < 0 else args.sdf_trunc,
         color_type=o3d.pipelines.integration.TSDFVolumeColorType.RGB8)
 
         if not skip_train:
@@ -216,6 +232,7 @@ if __name__ == "__main__":
     parser.add_argument("--voxel_size", default=0.002, type=float)
     parser.add_argument("--num_cluster", default=1, type=int)
     parser.add_argument("--use_depth_filter", action="store_true")
+    parser.add_argument("--sdf_trunc", default=-1.0, type=float, help='Mesh: truncation value for TSDF')
 
     args = get_combined_args(parser)
     print("Rendering " + args.model_path)
