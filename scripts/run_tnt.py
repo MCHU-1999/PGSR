@@ -1,7 +1,10 @@
 import os
 
-scenes = ['Courthouse', 'Truck', 'Caterpillar', 'Barn', 'Meetingroom', 'Ignatius']
-data_devices = ['cuda', 'cuda', 'cuda', 'cuda', 'cuda', 'cuda']
+# scenes = ['Courthouse', 'Truck', 'Caterpillar', 'Barn', 'Meetingroom', 'Ignatius']
+# data_devices = ['cuda', 'cuda', 'cuda', 'cuda', 'cuda', 'cuda']
+scenes = ['Barn']
+data_devices = ['cuda']
+
 data_base_path="/tudelft.net/staff-umbrella/Deep3D/mingchiehhu/TNT_GOF/TrainingSet"
 out_base_path='output_tnt'
 out_name='test'
@@ -36,6 +39,6 @@ for id, scene in enumerate(scenes):
     # os.system(cmd)
 
 # Evaluate Barn only
-cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python scripts/tnt_eval/run.py --dataset-dir {data_base_path}/Barn --traj-path {data_base_path}/Barn/Barn_COLMAP_SfM.log --ply-path {out_base_path}/Barn/{out_name}/mesh/tsdf_fusion_post.ply --out-dir {out_base_path}/Barn/{out_name}/mesh'
-print(cmd)
-os.system(cmd)
+# cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python scripts/tnt_eval/run.py --dataset-dir {data_base_path}/Barn --traj-path {data_base_path}/Barn/Barn_COLMAP_SfM.log --ply-path {out_base_path}/Barn/{out_name}/mesh/tsdf_fusion_post.ply --out-dir {out_base_path}/Barn/{out_name}/mesh'
+# print(cmd)
+# os.system(cmd)
