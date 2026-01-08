@@ -43,7 +43,7 @@ def render_set_no_mesh(model_path, name, iteration, views, scene, gaussians, pip
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         gt, _ = view.get_image()
-        out = render(view, gaussians, pipeline, background, app_model=app_model, image_scaling_coef=2)
+        out = render(view, gaussians, pipeline, background, app_model=app_model, image_scaling_coef=1)
         rendering = out["render"]
 
         # Depth and normal maps for feeding into PlanarSplatting (.npy files)        
