@@ -6,7 +6,7 @@ scenes = ['Barn']
 data_devices = ['cuda']
 
 data_base_path="/tudelft.net/staff-umbrella/Deep3D/mingchiehhu/TNT_GOF/TrainingSet"
-out_base_path='output_tnt'
+out_base_path='output_tnt_highres'
 out_name='test'
 gpu_id=0
 
