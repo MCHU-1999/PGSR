@@ -1,4 +1,5 @@
 output_tnt/
 output_tnt_highres/
+output_dtu/
 __pycache__/
 .DS_Store
