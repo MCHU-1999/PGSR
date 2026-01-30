@@ -5,7 +5,7 @@ scenes = [24]
 data_base_path='/tudelft.net/staff-umbrella/Deep3D/mingchiehhu/DTU'
 out_base_path='output_dtu'
 eval_path='dtu_eval'
-out_name='test'
+out_name='GM2'
 gpu_id=0
 
 for scene in scenes:
