@@ -154,7 +154,7 @@ class GaussianModel:
             return smallest_axis.squeeze(dim=2), smallest_axis_idx[..., 0, 0]
         return smallest_axis.squeeze(dim=2)
     
-    def get_normal(self, view_cam):
+    def get_normal(self, view_cam=None):
         # view_cam is not used in this model
         normal_global = self.get_smallest_axis()
         # apply learned sign logits via STE: tanh logits -> hard ±1 forward, gradients through tanh
