@@ -224,7 +224,7 @@ class GaussianModel:
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
             {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"},
-            {'params': [self._normal_signs], 'lr': max(1e-3, training_args.rotation_lr / 10.0), "name": "normal_signs"}
+            {'params': [self._normal_signs], 'lr': training_args.rotation_lr * 0.01, "name": "normal_signs", "weight_decay": 1e-5}
         ]
 
         self.optimizer = torch.optim.Adam(l, lr=0.0, eps=1e-15)
