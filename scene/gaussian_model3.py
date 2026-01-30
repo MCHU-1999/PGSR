@@ -154,7 +154,7 @@ class GaussianModel:
         normal_global = self.get_smallest_axis()
         gaussian_to_cam_global = view_cam.camera_center - self._xyz
         neg_mask = (normal_global * gaussian_to_cam_global).sum(-1) < 0.0
-        normal_global[neg_mask] = -normal_global[neg_mask]
+        normal_global[neg_mask] *= 0
         return normal_global
     
     def get_normal_raw(self):
@@ -255,7 +255,6 @@ class GaussianModel:
         mkdir_p(os.path.dirname(path))
 
         xyz = self._xyz.detach().cpu().numpy()
-        # normals = np.zeros_like(xyz)
         normals = self.get_normal_raw().detach().cpu().numpy()
         f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
         f_rest = self._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()

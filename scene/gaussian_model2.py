@@ -264,9 +264,6 @@ class GaussianModel:
 
         xyz = self._xyz.detach().cpu().numpy()
         normals = self.get_normal().detach().cpu().numpy()
-        # nrm = np.linalg.norm(normals, axis=1, keepdims=True)
-        # nrm[nrm == 0] = 1.0
-        # normals = normals / nrm
         f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
         f_rest = self._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
         opacities = self._opacity.detach().cpu().numpy()
