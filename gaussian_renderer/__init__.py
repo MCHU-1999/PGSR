@@ -13,7 +13,7 @@ import torch
 import math
 from diff_plane_rasterization import GaussianRasterizationSettings as PlaneGaussianRasterizationSettings
 from diff_plane_rasterization import GaussianRasterizer as PlaneGaussianRasterizer
-from scene.gaussian_model3 import GaussianModel
+from scene.gaussian_model import GaussianModel
 from scene.app_model import AppModel
 from utils.sh_utils import eval_sh
 from utils.graphics_utils import normal_from_depth_image

@@ -263,6 +263,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     image_weight_color = cv2.applyColorMap(image_weight, cv2.COLORMAP_JET)
                     row0 = np.concatenate([gt_img_show, img_show, normal_show, distance_color], axis=1)
                     row1 = np.concatenate([d_mask_show_color, depth_color, depth_normal_show, image_weight_color], axis=1)
+                    # Debug image layout (2 rows x 4 cols):
+                    # -----------------------------------------------------------------
+                    # | gt_img_show  | img_show     | normal_show    | distance_color |
+                    # -----------------------------------------------------------------
+                    # | d_mask_show  | depth_color  | depth_normal   | image_weight   |
+                    # -----------------------------------------------------------------
+                    # d_mask_show is a visualization of the per-pixel multi‑view weights
                     image_to_show = np.concatenate([row0, row1], axis=0)
                     cv2.imwrite(os.path.join(debug_path, "%05d"%iteration + "_" + viewpoint_cam.image_name + ".jpg"), image_to_show)
 
