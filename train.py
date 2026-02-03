@@ -189,12 +189,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
             image_weight = (1.0 - get_img_grad_weight(gt_image))
             image_weight = (image_weight).clamp(0,1).detach() ** 2
+            image_weight *= fg_mask
             if not opt.wo_image_weight:
                 # image_weight = erode(image_weight[None,None]).squeeze()
                 normal_loss = weight * (image_weight * (((depth_normal - normal)).abs().sum(0))).mean()
             else:
                 normal_loss = weight * (((depth_normal - normal)).abs().sum(0)).mean()
-            loss += (normal_loss * fg_mask)
+            loss += normal_loss
 
         # multi-view loss
         if iteration > opt.multi_view_weight_from_iter:
