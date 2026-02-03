@@ -152,6 +152,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         gt_image, gt_image_gray, fg_mask = viewpoint_cam.get_image()
         masked_gt = gt_image * fg_mask
+        masked_gt_gray = gt_image_gray * fg_mask
         if iteration > 1000 and opt.exposure_compensation:
             gaussians.use_app = True
 
@@ -186,10 +187,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             weight = opt.single_view_weight
             normal = render_pkg["rendered_normal"]
             depth_normal = render_pkg["depth_normal"]
+            depth_normal *= fg_mask
 
             image_weight = (1.0 - get_img_grad_weight(gt_image))
             image_weight = (image_weight).clamp(0,1).detach() ** 2
-            image_weight *= fg_mask.squeeze(0)
             if not opt.wo_image_weight:
                 # image_weight = erode(image_weight[None,None]).squeeze()
                 normal_loss = weight * (image_weight * (((depth_normal - normal)).abs().sum(0))).mean()
@@ -293,11 +294,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                             offsets = patch_offsets(patch_size, pixels.device)
                             ori_pixels_patch = pixels.reshape(-1, 1, 2) / viewpoint_cam.ncc_scale + offsets.float()
                             
-                            H, W = gt_image_gray.squeeze().shape
+                            H, W = masked_gt_gray.squeeze().shape
                             pixels_patch = ori_pixels_patch.clone()
                             pixels_patch[:, :, 0] = 2 * pixels_patch[:, :, 0] / (W - 1) - 1.0
                             pixels_patch[:, :, 1] = 2 * pixels_patch[:, :, 1] / (H - 1) - 1.0
-                            ref_gray_val = F.grid_sample(gt_image_gray.unsqueeze(1), pixels_patch.view(1, -1, 1, 2), align_corners=True)
+                            ref_gray_val = F.grid_sample(masked_gt_gray.unsqueeze(1), pixels_patch.view(1, -1, 1, 2), align_corners=True)
                             ref_gray_val = ref_gray_val.reshape(-1, total_patch_size)
 
                             ref_to_neareast_r = nearest_cam.world_view_transform[:3,:3].transpose(-1,-2) @ viewpoint_cam.world_view_transform[:3,:3]
@@ -324,29 +325,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         grid = patch_warp(H_ref_to_neareast.reshape(-1,3,3), ori_pixels_patch)
                         grid[:, :, 0] = 2 * grid[:, :, 0] / (W - 1) - 1.0
                         grid[:, :, 1] = 2 * grid[:, :, 1] / (H - 1) - 1.0
-                        _, nearest_image_gray, _ = nearest_cam.get_image()
-                        sampled_gray_val = F.grid_sample(nearest_image_gray[None], grid.reshape(1, -1, 1, 2), align_corners=True)
+                        _, nearest_image_gray, nearest_fg_mask = nearest_cam.get_image()
+                        masked_nearest_gray = nearest_image_gray * nearest_fg_mask
+                        sampled_gray_val = F.grid_sample(masked_nearest_gray[None], grid.reshape(1, -1, 1, 2), align_corners=True)
                         sampled_gray_val = sampled_gray_val.reshape(-1, total_patch_size)
                         
-                        ## compute loss
-                        # ncc, ncc_mask = lncc(ref_gray_val, sampled_gray_val)
-                        # mask = ncc_mask.reshape(-1)
-                        # ncc = ncc.reshape(-1) * weights
-                        # ncc = ncc[mask].squeeze()
-                        # if mask.sum() > 0:
-                        #     ncc_loss = ncc_weight * ncc.mean()
-                        #     loss += ncc_loss
-
+                        # compute loss
                         ncc, ncc_mask = lncc(ref_gray_val, sampled_gray_val)
                         mask = ncc_mask.reshape(-1)
                         ncc = ncc.reshape(-1) * weights
-                        ncc = ncc.squeeze()
-                        # Apply center-pixel foreground mask
-                        center_fg_mask = fg_mask.reshape(-1)[valid_indices].bool()
-                        combined_mask = mask & center_fg_mask
-                        
-                        if combined_mask.sum() > 0:
-                            ncc_loss = ncc_weight * (ncc[combined_mask]).mean()
+                        ncc = ncc[mask].squeeze()
+                        if mask.sum() > 0:
+                            ncc_loss = ncc_weight * ncc.mean()
                             loss += ncc_loss
 
         loss.backward()
