@@ -329,15 +329,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         sampled_gray_val = sampled_gray_val.reshape(-1, total_patch_size)
                         
                         ## compute loss
-                        ncc, ncc_mask = lncc(ref_gray_val, sampled_gray_val)
-                        mask = ncc_mask.reshape(-1)
-                        ncc = ncc.reshape(-1) * weights
-                        ncc = ncc[mask].squeeze()
-
+                        # ncc, ncc_mask = lncc(ref_gray_val, sampled_gray_val)
+                        # mask = ncc_mask.reshape(-1)
+                        # ncc = ncc.reshape(-1) * weights
+                        # ncc = ncc[mask].squeeze()
                         # if mask.sum() > 0:
                         #     ncc_loss = ncc_weight * ncc.mean()
                         #     loss += ncc_loss
 
+                        ncc, ncc_mask = lncc(ref_gray_val, sampled_gray_val)
+                        mask = ncc_mask.reshape(-1)
+                        ncc = ncc.reshape(-1) * weights
+                        ncc = ncc.squeeze()
                         # Apply center-pixel foreground mask
                         center_fg_mask = fg_mask.reshape(-1)[valid_indices].bool()
                         combined_mask = mask & center_fg_mask
