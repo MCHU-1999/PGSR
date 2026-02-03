@@ -150,9 +150,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
 
-        gt_image, gt_image_gray, fg_mask = viewpoint_cam.get_image()
+        gt_image, masked_gt_gray, fg_mask = viewpoint_cam.get_image()
         masked_gt = gt_image * fg_mask
-        masked_gt_gray = gt_image_gray * fg_mask
         if iteration > 1000 and opt.exposure_compensation:
             gaussians.use_app = True
 
@@ -325,8 +324,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         grid = patch_warp(H_ref_to_neareast.reshape(-1,3,3), ori_pixels_patch)
                         grid[:, :, 0] = 2 * grid[:, :, 0] / (W - 1) - 1.0
                         grid[:, :, 1] = 2 * grid[:, :, 1] / (H - 1) - 1.0
-                        _, nearest_image_gray, nearest_fg_mask = nearest_cam.get_image()
-                        masked_nearest_gray = nearest_image_gray * nearest_fg_mask
+                        _, masked_nearest_gray, nearest_fg_mask = nearest_cam.get_image()
                         sampled_gray_val = F.grid_sample(masked_nearest_gray[None], grid.reshape(1, -1, 1, 2), align_corners=True)
                         sampled_gray_val = sampled_gray_val.reshape(-1, total_patch_size)
                         

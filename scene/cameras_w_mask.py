@@ -30,6 +30,10 @@ def erode(bin_img, ksize=12):
     return out
 
 def process_image(image_path, resolution, ncc_scale, fg_mask_path):
+    # Set default ncc scale first
+    ncc_resolution = resolution
+
+    # Load image
     image = Image.open(image_path)
     if len(image.split()) > 3:
         resized_image_rgb = torch.cat([PILtoTorch(im, resolution) for im in image.split()[:3]], dim=0)
@@ -47,15 +51,20 @@ def process_image(image_path, resolution, ncc_scale, fg_mask_path):
             resized_image_rgb = PILtoTorch(image, ncc_resolution)
     gray_image = (0.299 * resized_image_rgb[0] + 0.587 * resized_image_rgb[1] + 0.114 * resized_image_rgb[2])[None]
 
-    # Load foreground mask (required parameter) and convert to binary
+    # Load foreground mask
     try:
         fg_mask_image = Image.open(fg_mask_path)
         fg_mask = PILtoTorch(fg_mask_image, resolution)
-        fg_mask = (fg_mask > 0.5).int()  # Convert 0-255 range to binary 0/1 integers
+        fg_mask_downsampled = PILtoTorch(fg_mask_image, ncc_resolution)
+        fg_mask = (fg_mask > 0.5).int()
+        fg_mask_downsampled = (fg_mask_downsampled > 0.5).int()
     except FileNotFoundError:
         fg_mask = torch.ones((1, resolution[1], resolution[0]), dtype=torch.int)
+        fg_mask_downsampled = torch.ones((1, ncc_resolution[1], ncc_resolution[0]), dtype=torch.int)
+
+    masked_gray_image = gray_image * fg_mask_downsampled
     
-    return gt_image, gray_image, fg_mask
+    return gt_image, masked_gray_image, fg_mask
 
 class Camera(nn.Module):
     def __init__(self, colmap_id, R, T, FoVx, FoVy,
