@@ -119,7 +119,7 @@ class Camera(nn.Module):
         if self.preload_img:
             return self.original_image.cuda(), self.original_image_gray.cuda(), self.fg_mask.cuda()
         else:
-            gt_image, gray_image, _, fg_mask = process_image(self.image_path, self.resolution, self.ncc_scale, self.fg_mask_path)
+            gt_image, gray_image, fg_mask = process_image(self.image_path, self.resolution, self.ncc_scale, self.fg_mask_path)
             return gt_image.cuda(), gray_image.cuda(), fg_mask.cuda()
 
     def get_calib_matrix_nerf(self, scale=1.0):
