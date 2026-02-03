@@ -18,3 +18,15 @@ for id, scene in enumerate(scenes):
     cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python train.py -s {data_base_path}/{scene} -m {out_base_path}/{scene}/{out_name} {common_args}'
     print(cmd)
     os.system(cmd)
+
+    if scene in ['Meetingroom', 'Courthouse']:
+        depth_trunc = 4.5
+        sdf_trunc = 0.024
+    else:
+        depth_trunc = 3
+        sdf_trunc = 0.016
+    
+    common_args = f"--data_device {data_devices[id]} --num_cluster 1 --use_depth_filter --voxel_size 0.004 --max_depth {depth_trunc} --sdf_trunc {sdf_trunc} --skip_test"
+    cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python scripts/render_tnt.py -m {out_base_path}/{scene}/{out_name} {common_args}'
+    print(cmd)
+    os.system(cmd)
