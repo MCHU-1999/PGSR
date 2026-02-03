@@ -17,7 +17,7 @@ for scene in scenes:
     print(cmd)
     os.system(cmd)
 
-    common_args = "--quiet -r2 --ncc_scale 0.5"
+    common_args = "--quiet -r2 --ncc_scale 0.5 --fg_masks masks"
     cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python train.py -s {data_base_path}/scan{scene} -m {out_base_path}/dtu_scan{scene}/{out_name} {common_args}'
     print(cmd)
     os.system(cmd)

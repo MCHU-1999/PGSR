@@ -46,7 +46,8 @@ def render_set_no_mesh(model_path, name, iteration, views, scene, gaussians, pip
     makedirs(render_normal_color_path, exist_ok=True)
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
-        gt, _ = view.get_image()
+        gt, _, fg_mask = view.get_image()
+        masked_gt = gt * fg_mask
         out = render(view, gaussians, pipeline, background, app_model=app_model, image_scaling_coef=2)
         rendering = out["render"]
 
@@ -74,7 +75,7 @@ def render_set_no_mesh(model_path, name, iteration, views, scene, gaussians, pip
 
 
         if name == 'test':
-            torchvision.utils.save_image(gt, os.path.join(gts_path, view.image_name + ".png"))
+            torchvision.utils.save_image(masked_gt, os.path.join(gts_path, view.image_name + ".png"))
             torchvision.utils.save_image(rendering, os.path.join(render_path, view.image_name + ".png"))
         else:
             rendering_np = (rendering.permute(1,2,0).clamp(0,1)[:,:,[2,1,0]]*255).detach().cpu().numpy().astype(np.uint8)

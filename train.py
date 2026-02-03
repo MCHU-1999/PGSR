@@ -28,7 +28,7 @@ from utils.image_utils import psnr, erode
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
 from scene.app_model import AppModel
-from scene.cameras import Camera
+from scene.cameras_w_mask import Camera
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_FOUND = True
@@ -73,7 +73,7 @@ def gen_virtul_cam(cam, trans_noise=1.0, deg_noise=15.0):
     Rt = np.linalg.inv(C2W)
     virtul_cam = Camera(100000, Rt[:3, :3].transpose(), Rt[:3, 3], cam.FoVx, cam.FoVy,
                         cam.image_width, cam.image_height,
-                        cam.image_path, cam.image_name, 100000,
+                        cam.image_path, cam.image_name, 100000, cam.fg_mask_path,
                         trans=np.array([0.0, 0.0, 0.0]), scale=1.0, 
                         preload_img=False, data_device = "cuda")
     return virtul_cam
@@ -150,7 +150,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
 
-        gt_image, gt_image_gray = viewpoint_cam.get_image()
+        gt_image, gt_image_gray, fg_mask = viewpoint_cam.get_image()
+        masked_gt = gt_image * fg_mask
         if iteration > 1000 and opt.exposure_compensation:
             gaussians.use_app = True
 
@@ -165,12 +166,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
         
         # Loss
-        ssim_loss = (1.0 - ssim(image, gt_image))
+        ssim_loss = (1.0 - ssim(image, masked_gt))
         if 'app_image' in render_pkg and ssim_loss < 0.5:
             app_image = render_pkg['app_image']
-            Ll1 = l1_loss(app_image, gt_image)
+            Ll1 = l1_loss(app_image, masked_gt)
         else:
-            Ll1 = l1_loss(image, gt_image)
+            Ll1 = l1_loss(image, masked_gt)
         image_loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * ssim_loss
         loss = image_loss.clone()
         
@@ -193,7 +194,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 normal_loss = weight * (image_weight * (((depth_normal - normal)).abs().sum(0))).mean()
             else:
                 normal_loss = weight * (((depth_normal - normal)).abs().sum(0)).mean()
-            loss += (normal_loss)
+            loss += (normal_loss * fg_mask)
 
         # multi-view loss
         if iteration > opt.multi_view_weight_from_iter:
@@ -322,7 +323,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         grid = patch_warp(H_ref_to_neareast.reshape(-1,3,3), ori_pixels_patch)
                         grid[:, :, 0] = 2 * grid[:, :, 0] / (W - 1) - 1.0
                         grid[:, :, 1] = 2 * grid[:, :, 1] / (H - 1) - 1.0
-                        _, nearest_image_gray = nearest_cam.get_image()
+                        _, nearest_image_gray, _ = nearest_cam.get_image()
                         sampled_gray_val = F.grid_sample(nearest_image_gray[None], grid.reshape(1, -1, 1, 2), align_corners=True)
                         sampled_gray_val = sampled_gray_val.reshape(-1, total_patch_size)
                         
@@ -332,8 +333,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         ncc = ncc.reshape(-1) * weights
                         ncc = ncc[mask].squeeze()
 
-                        if mask.sum() > 0:
-                            ncc_loss = ncc_weight * ncc.mean()
+                        # if mask.sum() > 0:
+                        #     ncc_loss = ncc_weight * ncc.mean()
+                        #     loss += ncc_loss
+
+                        # Apply center-pixel foreground mask
+                        center_fg_mask = fg_mask.reshape(-1)[valid_indices].bool()
+                        combined_mask = mask & center_fg_mask
+                        
+                        if combined_mask.sum() > 0:
+                            ncc_loss = ncc_weight * (ncc[combined_mask]).mean()
                             loss += ncc_loss
 
         loss.backward()
@@ -454,14 +463,15 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                     if 'app_image' in out:
                         image = out['app_image']
                     image = torch.clamp(image, 0.0, 1.0)
-                    gt_image, _ = viewpoint.get_image()
-                    gt_image = torch.clamp(gt_image.to("cuda"), 0.0, 1.0)
+                    gt_image, _, fg_mask = viewpoint.get_image()
+                    masked_gt = gt_image * fg_mask
+                    masked_gt = torch.clamp(masked_gt.to("cuda"), 0.0, 1.0)
                     if tb_writer and (idx < 5):
                         tb_writer.add_images(config['name'] + "_view_{}/render".format(viewpoint.image_name), image[None], global_step=iteration)
                         if iteration == testing_iterations[0]:
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
-                    l1_test += l1_loss(image, gt_image).mean().double()
-                    psnr_test += psnr(image, gt_image).mean().double()
+                    l1_test += l1_loss(image, masked_gt).mean().double()
+                    psnr_test += psnr(image, masked_gt).mean().double()
                 psnr_test /= len(config['cameras'])
                 l1_test /= len(config['cameras'])
                 print("\n[ITER {}] Evaluating {}: L1 {} PSNR {}".format(iteration, config['name'], l1_test, psnr_test))
