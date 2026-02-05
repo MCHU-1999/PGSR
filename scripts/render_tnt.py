@@ -92,7 +92,7 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         gt, _, fg_mask = view.get_image()
         masked_gt = gt * fg_mask
-        out = render(view, gaussians, pipeline, background, app_model=app_model)
+        out = render(view, gaussians, pipeline, background, app_model=app_model, image_scaling_coef=2)
         rendering = out["render"]
         _, H, W = rendering.shape
 
