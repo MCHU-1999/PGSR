@@ -82,11 +82,15 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders")
     render_depth_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_depth")
     render_normal_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_normal")
+    render_depth_color_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_depth_debug")
+    render_normal_color_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders_normal_debug")
 
     makedirs(gts_path, exist_ok=True)
     makedirs(render_path, exist_ok=True)
     makedirs(render_depth_path, exist_ok=True)
     makedirs(render_normal_path, exist_ok=True)
+    makedirs(render_depth_color_path, exist_ok=True)
+    makedirs(render_normal_color_path, exist_ok=True)
 
     depths_tsdf_fusion = []
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
@@ -105,12 +109,19 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
         depth_map_clamped = torch.clamp(depth_map, min=0, max=300) # Clamp values to (0, 300)
         depth_np = depth_map_clamped.cpu().numpy()
         np.save(os.path.join(render_depth_path, view.image_name + ".npy"), depth_np)
+        # Save depth as color image (jet colormap)
+        depth_normalized = (depth_map_clamped - depth_map_clamped.min()) / (depth_map_clamped.max() - depth_map_clamped.min() + 1e-8)
+        depth_colored = cv2.applyColorMap((depth_normalized.cpu().numpy() * 255).astype(np.uint8), cv2.COLORMAP_JET)
+        cv2.imwrite(os.path.join(render_depth_color_path, view.image_name + ".png"), depth_colored)
 
         # Process and save normal map
         normal_map = out["rendered_normal"]  # Shape: (3, H, W)
         normal_map = (normal_map + 1.0) / 2.0 # Remap from [-1, 1] to [0, 1]
         normal_np = normal_map.cpu().numpy()
         np.save(os.path.join(render_normal_path, view.image_name + ".npy"), normal_np)
+        # Save normal as color image (RGB visualization)
+        normal_rgb = (normal_map.permute(1, 2, 0).clamp(0, 1) * 255).cpu().numpy().astype(np.uint8)
+        cv2.imwrite(os.path.join(render_normal_color_path, view.image_name + ".png"), normal_rgb[:, :, [2, 1, 0]])  # BGR for OpenCV
 
         # Original code
         # depth = depth.detach().cpu().numpy()
