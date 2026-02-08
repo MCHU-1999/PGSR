@@ -207,8 +207,7 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
 
         volume = o3d.pipelines.integration.ScalableTSDFVolume(
         voxel_length=voxel_size,
-        # sdf_trunc=4.0*voxel_size,
-        sdf_trunc = 5.0*voxel_size if args.sdf_trunc < 0 else args.sdf_trunc,
+        sdf_trunc = 4.0*voxel_size if args.sdf_trunc < 0 else args.sdf_trunc,
         color_type=o3d.pipelines.integration.TSDFVolumeColorType.RGB8)
 
         if not skip_train:
@@ -219,12 +218,15 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
             path = os.path.join(dataset.model_path, "mesh")
             os.makedirs(path, exist_ok=True)
             
-            o3d.io.write_triangle_mesh(os.path.join(path, "tsdf_fusion.ply"), mesh, 
-                                       write_triangle_uvs=True, write_vertex_colors=True, write_vertex_normals=True)
+            # o3d.io.write_triangle_mesh(os.path.join(path, "tsdf_fusion.ply"), mesh, 
+            #                            write_triangle_uvs=True, write_vertex_colors=True, write_vertex_normals=True)
+            o3d.io.write_triangle_mesh(os.path.join(path, "tsdf_fusion.ply"), mesh)
 
             mesh = post_process_mesh(mesh, num_cluster)
-            o3d.io.write_triangle_mesh(os.path.join(path, "tsdf_fusion_post.ply"), mesh, 
-                                       write_triangle_uvs=True, write_vertex_colors=True, write_vertex_normals=True)
+            # o3d.io.write_triangle_mesh(os.path.join(path, "tsdf_fusion_post.ply"), mesh, 
+            #                            write_triangle_uvs=True, write_vertex_colors=True, write_vertex_normals=True)
+            o3d.io.write_triangle_mesh(os.path.join(path, "tsdf_fusion_post.ply"), mesh)
+
 
         if not skip_test:
             render_set(dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), scene, gaussians, pipeline, background)
