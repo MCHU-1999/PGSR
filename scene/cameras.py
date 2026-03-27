@@ -16,7 +16,7 @@ from utils.graphics_utils import getWorld2View2, getProjectionMatrix, fov2focal,
 import copy
 from PIL import Image
 from utils.general_utils import PILtoTorch
-import os, cv2
+# import os, cv2
 import torch.nn.functional as F
 
 def dilate(bin_img, ksize=6):
