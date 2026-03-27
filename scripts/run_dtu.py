@@ -23,7 +23,7 @@ for scene in scenes:
     os.system(cmd)
 
     common_args = "--quiet --num_cluster 1 --voxel_size 0.002 --max_depth 5.0 --use_depth_filter --skip_test"
-    cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python render_tnt.py -m {out_base_path}/dtu_scan{scene}/{out_name} {common_args}'
+    cmd = f'CUDA_VISIBLE_DEVICES={gpu_id} python scripts/render_tnt.py -m {out_base_path}/dtu_scan{scene}/{out_name} {common_args}'
     print(cmd)
     os.system(cmd)
 
