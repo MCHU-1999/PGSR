@@ -83,15 +83,19 @@ def render_set(model_path, name, iteration, views, scene, gaussians, pipeline, b
 
         depth = out["plane_depth"].squeeze()
         depth_tsdf = depth.clone()
-        depth = depth.detach().cpu().numpy()
-        depth_i = (depth - depth.min()) / (depth.max() - depth.min() + 1e-20)
-        depth_i = (depth_i * 255).clip(0, 255).astype(np.uint8)
-        depth_color = cv2.applyColorMap(depth_i, cv2.COLORMAP_JET)
 
-        normal = out["rendered_normal"].permute(1,2,0)
-        normal = normal/(normal.norm(dim=-1, keepdim=True)+1.0e-8)
-        normal = normal.detach().cpu().numpy()
-        normal = ((normal+1) * 127.5).astype(np.uint8).clip(0, 255)
+        # Depth and normal maps for feeding into PlanarSplatting (.npy files)
+        # Process and save depth map
+        depth_map = out["plane_depth"].squeeze() # Shape: (H, W)
+        depth_map_clamped = torch.clamp(depth_map, min=0, max=300) # Clamp values to (0, 300)
+        depth_np = depth_map_clamped.cpu().numpy()
+        np.save(os.path.join(render_depth_path, view.image_name + ".npy"), depth_np)
+
+        # Process and save normal map
+        normal_map = out["rendered_normal"]  # Shape: (3, H, W)
+        normal_map = normal_map.permute(1,2,0)  # Shape: (H, W, 3)
+        normal_np = normal_map.cpu().numpy()
+        np.save(os.path.join(render_normal_path, view.image_name + ".npy"), normal_np)
 
         if name == 'test':
             torchvision.utils.save_image(gt.clamp(0.0, 1.0), os.path.join(gts_path, view.image_name + ".png"))
